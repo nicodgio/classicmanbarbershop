@@ -21,7 +21,6 @@
             </select>
           </div>
 
-          <!-- Nombre de Servicio -->
           <div class="mb-3">
             <label for="nombreSelect" class="form-label">Nombre de Servicio</label>
             <select id="nombreSelect" name="servicio_id" class="form-select" disabled required>
@@ -29,7 +28,6 @@
             </select>
           </div>
 
-          <!-- Duración -->
           <div class="mb-3 d-none" id="durationContainer">
             <label for="durationSelect" class="form-label">Duración (minutos)</label>
             <select id="durationSelect" name="duracion" class="form-select" disabled>
@@ -37,14 +35,12 @@
             </select>
           </div>
 
-          <!-- Fecha -->
           <div class="mb-3">
             <label for="fechaInput" class="form-label">Fecha</label>
             <input type="text" id="fechaInput" name="fecha" class="form-control" placeholder="Selecciona fecha"
               autocomplete="off" disabled required>
           </div>
 
-          <!-- Hora -->
           <div class="mb-3 d-none" id="timeSelectContainer">
             <label for="horaSelect" class="form-label">Hora</label>
             <select id="horaSelect" name="hora_inicio" class="form-select" disabled required>
@@ -52,21 +48,18 @@
             </select>
           </div>
 
-          <!-- Nombre del Cliente -->
           <div class="mb-3">
             <label for="nombreInput" class="form-label">Nombre</label>
             <input type="text" id="nombreInput" name="nombre" class="form-control" placeholder="Nombre del cliente"
               disabled required>
           </div>
 
-          <!-- Teléfono -->
           <div class="mb-3">
             <label for="telefonoInput" class="form-label">Teléfono</label>
             <input type="tel" id="telefonoInput" name="telefono" class="form-control" placeholder="Teléfono de contacto"
               disabled required>
           </div>
 
-          <!-- Notas -->
           <div class="mb-3">
             <label for="notasInput" class="form-label">Notas</label>
             <textarea id="notasInput" name="notas" class="form-control" rows="3" placeholder="Observaciones (opcional)"
@@ -116,7 +109,6 @@
         .forEach(s => nameSelect.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.nombre}</option>`));
       nameSelect.disabled = false;
 
-      // Opciones de duración
       const cat = this.value.toLowerCase();
       let options = [];
       if (cat.includes('masaje') || cat.includes('facial')) options = [30, 45, 60, 90];
@@ -167,53 +159,27 @@
         const isToday = selected.toDateString() === today.toDateString();
         const currentH = today.getHours();
         const currentM = today.getMinutes();
-        const duration = parseInt(durationSelect.value, 10) || 60;
-        fetch(`citas/list_citas.php?fecha=${encodeURIComponent(dateStr)}`)
-          .then(r => r.json())
-          .then(citasList => {
-            const pad = n => String(n).padStart(2, '0');
-            const maxBarberos = 2;
-            let html = '<option value="" disabled selected>Seleccione hora</option>';
-            // Recorremos todos los posibles slots
-            for (let h = 10; h < 19; h++) {
-              for (let m = 0; m < 60; m += 15) {
-                if (isToday && (h < currentH || (h === currentH && m <= currentM))) {
-                  continue;
-                }
-                const slot = `${pad(h)}:${pad(m)}`;
-                // Calculamos el fin del slot según duración
-                const dtEnd = new Date();
-                dtEnd.setHours(h, m + duration);
-                const endSlot = `${pad(dtEnd.getHours())}:${pad(dtEnd.getMinutes())}`;
-                // Contamos cuántas citas hay que se solapan con TODO el rango [slot, endSlot)
-                const solapamientos = citasList.filter(c =>
-                  c.inicio < endSlot && c.fin > slot
-                ).length;
-                // Si ya hay 2 citas solapadas, lo ocultamos
-                if (solapamientos >= maxBarberos) {
-                  continue;
-                }
-                const display = `${h % 12 || 12}:${pad(m)} ${h < 12 ? 'am' : 'pm'}`;
-                html += `<option value="${slot}">${display}</option>`;
-              }
+
+        const pad = n => String(n).padStart(2, '0');
+        let html = '<option value="" disabled selected>Seleccione hora</option>';
+        
+        for (let h = 10; h < 19; h++) {
+          for (let m = 0; m < 60; m += 15) {
+            if (isToday && (h < currentH || (h === currentH && m <= currentM))) {
+              continue;
             }
-            horaSelect.innerHTML = html;
-            horaSelect.disabled = false;
-            timeContainer.classList.remove('d-none');
-          });
+            const slot = `${pad(h)}:${pad(m)}`;
+            const display = `${h % 12 || 12}:${pad(m)} ${h < 12 ? 'am' : 'pm'}`;
+            html += `<option value="${slot}">${display}</option>`;
+          }
+        }
+        
+        horaSelect.innerHTML = html;
+        horaSelect.disabled = false;
+        timeContainer.classList.remove('d-none');
       }
     });
 
-    horaSelect.addEventListener('change', function () {
-      const opt = this.selectedOptions[0];
-      const freeTime = parseInt(opt.dataset.freeTime, 10);
-      const duration = parseInt(durationSelect.value, 10) || 60;
-      if (!isNaN(freeTime) && freeTime < duration) {
-        if (!confirm(`Solo tienes ${freeTime} minutos disponibles antes de la próxima cita. ¿Deseas continuar?`)) {
-          this.value = '';
-        }
-      }
-    });
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
@@ -238,14 +204,12 @@
             return alert('Error: ' + json.message);
           }
 
-          // Ocultar el modal de nueva cita
           const addModalEl = document.getElementById('addCitaModal');
           if (addModalEl) bootstrap.Modal.getInstance(addModalEl).hide();
 
-          // Datos de la cita registrada
           const r = json.data;
           const [y, m, d] = r.fecha.split('-');
-          const fechaFmt = `${d}-${m}-${y}`;
+          const fechaFmt = `${d}-${m}`;
           const hIni = r.hora_inicio.slice(0, 5);
           const hFin = r.hora_fin.slice(0, 5);
           const svc = services.find(s => s.id == r.servicio_id);
@@ -255,7 +219,6 @@
           else if (r.estado == 1) { txt = 'CONFIRMADA'; cls = 'status-confirmada'; }
           else { txt = 'CANCELADA'; cls = 'status-cancelada'; }
 
-          // Construir la fila
           const tr = document.createElement('tr');
           tr.dataset.id = r.id;
           tr.innerHTML = `
@@ -279,11 +242,9 @@
 
           const tbody = document.querySelector('table.table tbody');
 
-          // 1) Si existe la fila “No hay citas”, eliminarla
           const noData = tbody.querySelector('tr td[colspan="9"]');
           if (noData) noData.parentElement.remove();
 
-          // 2) Insertar en orden por hora
           let inserted = false;
           [...tbody.rows].forEach(row => {
             if (inserted) return;
@@ -296,7 +257,6 @@
           });
           if (!inserted) tbody.appendChild(tr);
 
-          // 3) Mostrar modal de éxito (si existe)
           const successText = document.getElementById('cita-success-text');
           const successModal = document.getElementById('citaSuccessModal');
           if (successText && successModal) {
@@ -313,7 +273,6 @@
         });
     });
 
-    // Reset al cerrar modal
     document.getElementById('addCitaModal').addEventListener('hidden.bs.modal', function () {
       form.reset();
       nameSelect.disabled = true;

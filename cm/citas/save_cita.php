@@ -25,25 +25,6 @@ if (!$servicioId || !$fecha || !$horaInicio || !$nombre || !$telefono) {
     exit;
 }
 
-$chk = $pdo->prepare("
-    SELECT COUNT(*) 
-      FROM Citas 
-     WHERE fecha = :fecha 
-       AND hora_inicio = :hora_inicio
-       AND estado IN (1,2)
-");
-$chk->execute([
-    ':fecha'       => $fecha,
-    ':hora_inicio' => $horaInicio,
-]);
-if ($chk->fetchColumn() >= 2) {
-    echo json_encode([
-        'success' => false,
-        'message' => "El horario $horaInicio ya está lleno."
-    ]);
-    exit;
-}
-
 try {
     $dt = new DateTime("$fecha $horaInicio");
     $dt->modify("+{$duracion} minutes");
